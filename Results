@@ -1,0 +1,194 @@
+%! Author = sbbfti
+%! Date = 10/06/2020
+
+
+\section{Results}
+
+\subsection{Validation}
+
+\subsubsection{Laplace Equations}
+The results of the scheme used on this standard equation are presented first in order to facilitate comparison of this scheme with the standard schemes of present use and as a validation before moving to niche phenomena.
+The problem considered is the heat diffusion equation in the annulus geometry. The inner and outer radius of the geometry are considered to be 0.4 and 0.6 respectively \footnote{It is to be assumed that all the gas variables here on are in there respective non-dimensionalised form and the physical interpretation of the values will be detailed while discussing the full non-linear equations}. The mesh consists of $10\times 40$ nodes with the outer and inner wall temperatures are 1 and 2 (absolute), respectively. $Kn=1$ and $\kappa = \frac{15}{4}$. The 3D field plot for temperature is angular symmetric as expected with the Laplace equation with radial boundary condition. Figure (\ref{lap3}) shows the variation of temperature along the radius, which follows a logarithmic trend. Note that the discretised solution matches with the analytical solution very accurately.
+\begin{figure}[H]
+        \includegraphics[scale=0.4]{manuscript/src/figures/lap_3.jpg}
+        \centering
+        \caption{Temperature as a function of radius}
+        \label{lap3}
+\end{figure}
+The order of convergence is calculated over the domain under the same conditions but with a set of number of nodes - $\{20\times5, 40\times10, 60\times15, 80\times20, 100\times25, 120\times30, 140\times35, 160\times40\}$\footnote{$a\times b$ indicates the aspect ratio of the nodes}. As shown in Figure \ref{orderconvo}, the order of convergence is shown to be 2.6327. Note that for the laplace equation, the value is slightly inflated because of the intrinsic symmetric and simple nature of the equation. 
+\begin{figure}[H]
+        \includegraphics[scale=0.4]{manuscript/src/figures/order_conver.jpg}
+        \centering
+        \caption{Norm of error between numerical solution and analytical solution}
+        \label{orderconvo}
+\end{figure}
+
+\subsubsection{Navier-Stokes-Fourier equations}
+In this section, numerical solutions are presented for the 2D lid-driven cavity are presented for the fully non-linear Navier-Stokes-Fourier equations.
+As referred to in the introduction, a common trick to solve the continuum approximation of rarefied gas problems is the slow fluid assumption, meaning the velocities are assumed to be small, thus causing minimal variations in the equilibrium variables $(\varrho,\vartheta)$. But this narrows down the scope of the flow analysis as non-linearity is necessary to capture the important physics of the rarefaction effects. In the non-linear equations, a Picard's iteration approach is used to solve the system. The simulation is performed on a $30\times30$ grid with $\phi_c = \frac{\pi}{3}$ and non-dimensionalised $v_{lid} = 0.1$. The wall temperature is taken to be 1.1 on the upper and lower boundaries, and 1 on the left and right boundaries. The temperature, as mentioned earlier, is in the energy units. Due to the equation dimensions, the velocity value is multiplied by the local Mach number. The gas parameters for the simulation are used as follows: $Kn = 0.01,\,c_p = \frac{5}{2},\,Pr = \frac{2}{3}$ and (Mach number)$\mathcal{M_0} = 1$. In the context of the code (see Appendix), the CCR model reduces to the NSF equations when $\alpha_0=0$ as the constitutive relations also reduce to Fourier's law and Newton's law of viscosity. 
+\[\text{U}=\left\{\varrho ,v_x,v_y,\sigma _{\text{xx}},\sigma _{\text{xy}},\sigma _{\text{yy}},\vartheta ,q_x,q_y\right\}\]
+\begin{figure*}[h]
+        \includegraphics[scale=0.35]{manuscript/src/figures/fieldplotnsf2.png}
+        \centering
+        \caption{The field plots of all variables for non-linear NSF with non-linear BCs}
+        \label{non_linear_nsf}
+\end{figure*}
+\begin{figure}[H]
+        \includegraphics[scale=0.4]{manuscript/src/figures/rate_conver.jpg}
+        \centering
+        \caption{Consecutive Solution Norm along every iteration}
+        \label{rate_conver}
+\end{figure}
+As the simulation is performed for a mono-atomic gas, the solutions are expected to be similar in trend to the simpler, linearised equations. It can be observed that the scheme handles the non-linearity well enough and gives stable solutions. The convergence rate of the solution can be seen in Figure \ref{rate_conver}, which confirms the stability of the numerical scheme and the accuracy afforded by the iteration method. We also a present a case in which there is no thermal imbalance between the boundaries to isolate the effects due to the hydrodynamic forcing only. The $v_{lid} = 0.20982$, $Kn = 0.08$ and both the wall temperatures are 1. Figure (\ref{vec_nsf_vel}) shows the velocity contours superimposed on the stress contours while the Figure (\ref{vec_nsf_heat}) shows the heat flow lines with the temperature contours. As the temperature difference is no longer the forcing parameter of the flow, the heat flow emanates from the lid where it is generated due to velocity and shear stress transfer to the fluid. Also the heat flows lines originate from the high temperature region to move towards the low temperature region, in accordance with the Fourier's law. [This indicates the stress is not transferred deep within the domain because the stress induced heat is generated only through the energy conservation relation and not through the constitutive relations].
+
+        \begin{figure*}[h]
+        \begin{subfigure}{0.4\textwidth}
+            \includegraphics[scale=0.5]{manuscript/src/figures/fieldplot_nsf_KN008_vel.jpg}
+            \caption{Velocity}
+            \label{vec_nsf_vel}
+        \end{subfigure}
+        \begin{subfigure}{0.5\textwidth}
+            \includegraphics[scale=0.5]{manuscript/src/figures/fieldplot_nsf_KN008.jpg}
+            \caption{Heat flow}
+            \label{vec_nsf_heat}
+        \end{subfigure}
+            \centering
+            \caption{Purely hydrodynamic case with NSF model}
+            \label{vec_nsf}
+        \end{figure*}
+
+\subsubsection{CCR model}
+The CCR model is highlighted by the additional coupling between the stress and heat terms which includes the anti-Fourier heat flux and heat generated due to viscous stress spatial gradients. The parameters $\alpha_0$, $\alpha_1$ and $\alpha_2$ are taken as $0.3197$, $0.4094$ and $-0.2816$ respectively. These are the values derived for hard sphere assumption of gaseous molecules as also described in \cite{rana_ccr}. This molecule assumption is used in the DSMC method as well. Imposing these values in the Equations \ref{ccr_heat} and \ref{ccr_stress}, it is expected that the niche effects can be observed primarily in the temperature and heat plots as visible in Figure (\ref{ccr_sol}). The physical case setup is the same as presented in the latter part of the previous NSF section, only that $Kn = 0.08$ to present the rarefied effects. Figure (\ref{rate_conver_ccr}) shows the logarithmic convergence of the solution along the non-linear iteration, showing that a convergent stable solution has been reached. The solution was computed in less than a minute on an Intel i7-8750H processor.
+\[\text{U}=\left\{ \varrho ,v_x,v_y,\sigma _{\text{xx}},\sigma _{\text{xy}},\sigma _{\text{yy}},\vartheta ,q_x,q_y \right\}\]
+
+\begin{figure*}
+        \includegraphics[scale=0.5]{manuscript/src/figures/ccr.jpg}
+        \centering
+        \caption{Field plots for CCR model with Maxwellian molecules}
+        \label{ccr_sol}
+\end{figure*}
+
+\begin{figure}[H]
+        \includegraphics[scale=0.4]{manuscript/src/figures/rate_conver_ccr.jpg}
+        \centering
+        \caption{Consecutive Solution Norm along every iteration for CCR model}
+        \label{rate_conver_ccr}
+\end{figure}
+The symmetry of the temperature profile is terminated due to the stress gradient component. Given that all initial conditions and operating parameters are the same as the previous result, there are magnitude variations to be noted in the density and stress terms. The density is more constrained in the variations owing to higher viscous effects present in the bulk, also confirmed by the plot of $\sigma_{xy}$. It is to be noted that the ghost source addition is not sufficient for constraining the CCR model and the solution diverges as the Picard's iteration proceed and hence the mass constraint needs to be used exclusively. This can be attributed to the fact that the former method is externally forced whereas in the latter it is incorporated intrinsically within the collocation matrix.
+Similar to the NSF equations, Figure \ref{vec_ccr} shows the velocity and heat flow vectors superimposed on viscous stress and temperature contours respectively, for the purely hydrodynamic case. The temperature contour plot is at a higher average value as due to the $\alpha_0 \neq 0$, there are additional terms in the constitutive relations and thus heat flow is generated throughout the domain. As opposed to the Navier-Stokes case, it is to be noted that the heat flow is from the colder state to the hotter state. This is due to the dominance of the pressure and stress gradient components in the constitutive relation of heat (Eq. \ref{ccr_heat}).
+        \begin{figure*}[ht] 
+        \begin{subfigure}{0.55\textwidth}
+            \includegraphics[scale=0.5]{manuscript/src/figures/fieldplot_ccr_KN008_vel.jpg}
+            \caption{Velocity}
+        \end{subfigure}
+        \begin{subfigure}{0.4\textwidth}
+            \includegraphics[scale=0.5]{manuscript/src/figures/fieldplot_ccr_KN008.jpg}
+            \caption{Heat flow}
+        \end{subfigure}
+            \centering
+            \caption{Purely hydrodynamic case for CCR}
+            \label{vec_ccr}
+        \end{figure*}
+        
+\subsubsection{Model Comparison}
+ In this section we note the relative accuracy of the CCR and NSF results with the exact DSMC results for the square domain (\cite{gu_emerson_dsmc},\cite{MizziSimon2008Emmf}). The left side of Figure \ref{1dvec_ccr} shows the variation of non-dimensionalised x-component of the velocity, $\frac{v_x}{v_{lid}}$, along the vertical centerline of the domain and the right side shows the corresponding plot of $\frac{v_y}{v_{lid}}$ along the horizontal centerline of the square cavity. For low Knudsen numbers in Row 1 and 2 of the figure, we observe excellent comparison with the DSMC values for results with both the equation models. For large Knudsen numbers (Row 3) inaccuracy is observed. For the CCR model, this offset decreases as we reach at the wall indicating that the slip jump boundary conditions coupled with the bulk equations provide a strong alternative to the computationally expensive DSMC method for the slip-flow regime of Knudsen numbers. Even so, it should be noted that the CCR model shows significant improvement over the NSF equations indicating it captures the rarefaction effects.
+
+    \begin{figure}[H]
+    \newline
+        \begin{subfigure}{0.55\textwidth}
+            \includegraphics[scale=0.45]{manuscript/src/figures/kn001oneDvx.jpg}
+        \end{subfigure}
+        \begin{subfigure}{0.4\textwidth}
+            \includegraphics[scale=0.45]{manuscript/src/figures/kn001oneDvy.jpg}
+        \end{subfigure}
+        \newline
+        \begin{subfigure}{0.55\textwidth}
+            \includegraphics[scale=0.4]{manuscript/src/figures/kn008oneDvx.jpg}
+        \end{subfigure}
+        \begin{subfigure}{0.4\textwidth}
+            \includegraphics[scale=0.4]{manuscript/src/figures/kn008oneDvy.jpg}
+        \end{subfigure}
+         \newline
+        \begin{subfigure}{0.55\textwidth}
+            \includegraphics[scale=0.4]{manuscript/src/figures/kn03989oneDvx.jpg}
+        \end{subfigure}
+        \begin{subfigure}{0.4\textwidth}
+            \includegraphics[scale=0.4]{manuscript/src/figures/kn03989oneDvy.jpg}
+        \end{subfigure}
+            \centering
+            \caption{Cross section 1D plots}
+            \label{1dvec_ccr}
+    \end{figure}
+    
+     
+ \subsection{Irregular Domains}
+  In this section, we present the results for the use of this scheme for solving the rarefied gas dynamics problems over non-square domains. A body fitted mesh is used for the spatial discretisation. In principle, one can use spatial transformations over body-fitted meshes to Cartesian grids and solve with the above method. But the non-linearity of the bulk equations restricts this transformations as it hampers the accuracy of the derivative discretisation. In conventional CFD, this motivates the requirement to solve the governing equations as much true to the local geometry as possible. As body fitted meshes can allow for high skewness of the nodes, unstructured grids are used to balance both issues. To this end, we show that the present method handles the skewness of the body fitted meshes very well, thus sufficiently retaining the scope of geometries that can be used.
+  
+  \subsubsection{Lid-driven curved cavity}
+  We present the results for the geometry described in Section \ref{probdes}. The lid-velocity is 0.2087 in the positive-x direction and the $Kn = 0.04$. Figure (\ref{curved_ccr}) shows the field plot for velocity vectors superimposed on stress plot and heat flux vector on temperature contour respectively. Note that the velocity and heat flux vectors adjust for the curved boundary but the bulk properties remain similar to the square domain. Figure (\ref{curved_comp}) shows the quantitative effects of the curvature of the field values. Note that the x-component of velocity varies very little but we see a considerable impact on the y-component of the velocity for a light curvature.
+  
+    \begin{figure}[H] 
+        \begin{subfigure}{0.55\textwidth}
+            \includegraphics[scale=0.4]{manuscript/src/figures/curvedkn004vel.jpg}
+            \caption{Velocity}
+        \end{subfigure}
+        \begin{subfigure}{0.4\textwidth}
+            \includegraphics[scale=0.4]{manuscript/src/figures/curvedkn004temp.jpg}
+            \caption{Heat flow}
+        \end{subfigure}
+            \centering
+            \caption{Purely hydrodynamic case in lid-driven curved cavity}
+            \label{curved_ccr}
+    \end{figure}
+    
+    \begin{figure}[H] 
+        \begin{subfigure}{0.5\textwidth}
+            \includegraphics[scale=0.3]{manuscript/src/figures/curvature_vx.jpg}
+        \end{subfigure}
+        \begin{subfigure}{0.4\textwidth}
+            \includegraphics[scale=0.3]{manuscript/src/figures/curvature_vy.jpg}
+        \end{subfigure}
+            \centering
+            \caption{Effect of bottom curvature across Knudsen numbers}
+            \label{curved_comp}
+    \end{figure}
+    
+\subsubsection{Triangular lid driven cavity}
+To demonstrate the functioning of the scheme on skewed meshes, we consider the case of a lid-driven triangular cavity. The spatial discretisation of the cavity is shown in Figure (\ref{tri_mesh}), which denotes the quite skewed mesh elements towards the right of the triangular cavity.The bottom wall of the cavity moves rightwards with a velocity, $v_{wall} = 0.2087$ and $Kn = 0.04$. The temperature is set to be 1 on all three boundaries in order to facilitate the comparison with the square cavity. Figure (\ref{tri_field}) shows the velocity vectors with stress contours on the left side and the heat flux vectors with temperature contours on the right. Note that the anti-Fourier heat flux still persists with no heat circulation. Moreover the peculiar source-like heat flow near the top corner also translates to the diffused state in the velocity plot. It can be observed in Figure (\ref{tri_iteration}) that the non-linear solution is stable. [Thus it is shown that the presented scheme solves the]  
+
+        \begin{figure}[h]
+            \includegraphics[scale=0.5]{manuscript/src/figures/tri_cavity_mesh.jpg}
+            \centering
+            \caption{Mesh for triangle cavity}
+            \label{tri_mesh}
+        \end{figure}
+        
+    \begin{figure}[H] 
+        \begin{subfigure}{0.5\textwidth}
+            \includegraphics[scale=0.3]{manuscript/src/figures/tri_cavity.jpg}
+            \caption{Temperature}
+        \end{subfigure}
+        \begin{subfigure}{0.45\textwidth}
+            \includegraphics[scale=0.3]{manuscript/src/figures/tri_cavity_velocity.jpg}
+            \caption{Velocity}
+        \end{subfigure}
+            \centering
+            \caption{Effect of bottom curvature across Knudsen numbers}
+            \label{tri_field}
+    \end{figure}
+    
+        \begin{figure}[h]
+            \includegraphics[scale=0.5]{manuscript/src/figures/tri_iteration.jpg}
+            \centering
+            \caption{Convergence of triangular cavity simulation}
+            \label{tri_iteration}
+        \end{figure}
+
+\section{Conclusion}
+The domain and present research on computationally inexpen
+sive methods of modelling rarefied gases was introduced and a review on the challenges faced in the contemporary methods. Stochastic methods like DSMC and continuum CFD methods though more accurate, are remarkably complex for rapid application and suffer from high computational cost. On the other hand, finite difference methods are inexpensive and fast but are not able to handle curved domains. The method of fundamental solutions (MFS) was introduced and was used to obtain solutions of the Laplace and the Navier Stokes equations, and the code is use was validated using the analytical solution.\par
+
+We have presented a new numerical scheme that works on unstructured grids based on the Finite Difference framework. The scheme is works on the principle of shape polynomials in which the functions are fit over a stencil and the analytical derivative of the function is used to approximate the derivative of field variables in the governing equations. For closed systems, there is a requirement to constrain the NSF equations and the CCR model further with an extra constraint. It can be done with a ghost source addition or non-local mass boundary conditions but the latter holds more generality with regards to applicability on the CCR model. The solution generated from this scheme is compared against the analytical and MFS solution with accuracy. The order and rate of convergence of the scheme demonstrates its inexpensive and scalable nature. The method is also demonstrated to capture the additional physics introduced by the CCR model with a negligible loss in the rate of convergence. Hence the numerical method is verified to be stable and accurate. The scheme is shown to work very well for irregular domains and also handles skewed mesh distributions with good accuracy.\par
+The inexpensive computational modelling of rarefied gases is a much sought after objective for many engineering applications and research. We hope that the present scheme provides a means to work towards that objective. The stability of the equations over curved domains opens the possibility for study of multi phase effects in areas of rheology and evaporation. Further work can also be conducted on generalising the scheme for polyatomic gases and for open mass-energy systems. 
+
+
