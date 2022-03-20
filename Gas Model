@@ -1,0 +1,67 @@
+%! Author = sbbfti
+%! Date = 10/06/2020
+
+\section{Gas Model}
+
+\subsection{Bulk Equations - CCR model}
+
+The governing equations of continuum fluid flow and heat transfer are given by the Navier-Stokes-Fourier equations. The energy equation (\ref{NSF_energy}) reduces to the Laplace equation is absence of hydrodynamic activity. It is given as,
+\begin{enumerate}
+    \item \textit{Mass Conservation Equation:}
+        \begin{equation}\label{NSF_mass}
+                \pdv{\rho}{t} + \div{(\rho \vec{u})} = 0
+        \end{equation}
+    \item \textit{Momentum Equation:}
+        \begin{equation}\label{NSF_mom}
+                \pdv{\rho \vec{u}}{t} + \div{(\rho \vec{u} \otimes \vec{u})} = -\grad p + \div{\vec{\tau}}
+        \end{equation}
+    \item \textit{Energy Equation:}
+        \begin{equation}\label{NSF_energy}
+                \pdv{E}{t} + \div{(E \vec{u})} = \rho\;\dot{q}_{gen} + \kappa \nabla{q} -\div{(p \vec{u})} + \div{(\vec{\tau} \otimes \vec{u})}
+    \end{equation}
+\end{enumerate}
+\quad \quad,where $t$ is the time coordinate and the $\nabla$ denotes a spatial divergence operator. Additionally, $\vec{u}$, $\rho$, $\vec{\tau}$, $f$, $T$, and $\dot{q}_{gen}$ denote velocity, density, stress tensor, body force, temperature and heat generation. $E = u + \frac{1}{2} v^2$, where $u$ is the internal energy.
+
+In case of simulation of thermodynamic effects, it has to be ensured that the second law of thermodynamics is held true. When local thermodynamic equilibrium is assumed, which is true in the continuum regime of flows, the Gibbs equation is valid. Hence, using the constitutive relations, (\ref{eq_newt}) and (\ref{eq_fourier}) it can be proved that the NSF equations satisfy the Second Law intrinsically \cite{rana_ccr}.
+    \begin{enumerate}
+        \item \textit{Gibbs' equation:}
+            \begin{equation} \label{eq_gibbs}
+                T \dv{s}{\rho} = \dv{u}{\rho} - \frac{p}{\rho^2}
+            \end{equation}
+        \item \textit{Newton's Law of Viscosity:}
+            \begin{equation} \label{eq_newt}
+                \tau_{ij} = -2\mu \pdv{v_{\langle i}}{x_{j\rangle}}
+            \end{equation}
+        \item \textit{Fourier's law of heat conduction:}
+            \begin{equation} \label{eq_fourier}
+                q_{i} = -\kappa \pdv{\theta}{x_i}
+            \end{equation}
+    \end{enumerate} 
+    \quad \quad,where $\theta$ is the temperature $T$ in energy units, $\theta = RT$, and $\mu$ and $\kappa$ are the coefficients of shear viscosity and thermal conductivity respectively.\\
+    The angular brackets in the derivative stand for the trace-less part of the corresponding tensor. For example,
+    \[ \pdv{v_{\langle i}}{x_{j\rangle}} = \frac{1}{2} \left( \pdv{v_i}{x_j} + \pdv{v_j}{x_i} \right) - \frac{1}{3} \pdv{v_k}{x_k}\delta_{ij} \]
+    
+    In the absence of local thermodynamic equilibrium, the theories of Extended Irreversible Thermodynamics \cite{M_ller_1993}\cite{myong}\cite{rana_ccr} suggest a correction in the entropy flux. Additional terms emerge, indicating non-Fourier heat flux and viscous heating, leading to the following constitutive relations: 
+    \begin{equation} \label{ccr_stress}
+        \Pi_{kl} = -2\mu \left[ \pdv{v_{\langle k}}{x_{l\rangle}} + \frac{\alpha_0}{p}\left( \pdv{q_{\langle k}}{x_{l\rangle}} - \alpha_1 q_{\langle k} \pdv{\ln{\theta}}{x_{l \rangle}}\right)\right]    
+    \end{equation}
+    \begin{equation} \label{ccr_heat}
+        q_k = -\frac{5\mu}{2\;Pr}\left[ \pdv{\theta}{x_k} + \frac{\alpha_0}{\rho}\left( \pdv{\Pi_{kl}}{x_l}-\alpha_1^* \Pi_{kl} \pdv{\ln{\theta}}{x_l}-\alpha_2^* \Pi_{kl} \frac{\ln{p}}{x_l}\right)\right]
+    \end{equation}
+    $\Pi_{kl}$ is used to denote the stress tensor hereon to clarify the use of new constitutive relations. Here, $\alpha_0$ is based on the nature of molecules in the gases; it is taken to be 2/5 for Maxwellian molecules. $\alpha_1$ and $\alpha_2$ are constants derived from comparison of results with the Chapman-Enskog expansion and $\alpha_r^* = 1-\alpha_r,\; r \in \{1,2\} $. The NSF \cref{NSF_mass,NSF_mom,NSF_energy} and, constitutive relations (\ref{ccr_stress}) and (\ref{ccr_heat}) together form the \textit{CCR model}. \par
+    Note that the relation between the spatial temperature gradients and the corresponding heat flux is no longer linear. Additionally, there is a direct coupling between the stress and temperature. This allows us to capture the temperature changes for a lid-driven cavity with purely hydrodynamic initial conditions.
+    
+\subsection{Boundary Conditions} \label{bcs}
+The boundary conditions for the CCR model can be derived from imposing the continuity of fluxes of moments of the distribution function of the molecules (\cite{rana_ccr}). These boundary conditions can be simplified to first order for application to an extended continuum model but retaining the full non-linearity of the heat and stress terms. The final set of equations is presented as follows:
+Let,
+\begin{align*}
+    \mathcal{P} &= p + \frac{1}{2}\sigma_{nn} 
+\end{align*}
+Then the boundary conditions for heat and stress are,
+\begin{align}
+    v_n &= 0 \\
+    \sigma_{tn} &= -\frac{\chi}{2-\chi} \sqrt{\frac{2}{\pi (\vartheta+1)}} \left( \mathcal{P}\;\nu_t + \frac{1}{5} q_t \right) \\
+    q_n &= -\frac{\chi}{2-\chi} \sqrt{\frac{2}{\pi (\vartheta+1)}} \left( 2\mathcal{P}\;(\vartheta-\vartheta_w) - \frac{\mathcal{P}}{2}\nu_t^2 + \frac{1}{2} (\vartheta+1) \sigma_{nn} \right)
+\end{align}
+\quad, where $\nu_t = v_t - v_w$. The subscripts '$n$','$t$','$w$' denote the normal, tangential components and wall values, respectively. Also, $\varrho$ = $(\rho - 1)$ and $\vartheta$ = $(\theta - 1)$ to aid in the actual numerical computation. \\
+An important variations that can occur while converting these non-linear equations into the standard form is the choice of properties to be treated as variables and coefficients. The non-linearities that are treated as coefficients have to be those that are smooth and have relatively minimal variations. Hence, the equilibrium variables, $\varrho$ and $\vartheta$, are taken to be coefficients in terms involving multiple properties. The only parameter here is $\chi$, the accommodation coefficient, denoting the probability of thermalisation of the particles. It assumes values from $0\leq \chi \leq 1$, where $X=1$ indicates full accommodation meaning thermalisation of the particles with the wall. $\chi=0$ for no accommodation i.e. full specular reflection.
