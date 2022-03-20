@@ -1,0 +1,176 @@
+%! Author = sbbfti
+%! Date = 10/06/2020
+
+\section{Methodology}
+
+\subsection{Problem Description} \label{probdes}
+
+The lid-driven cavity has been a standard problem in fluid mechanics due to its many instances in practical technologies. It captures sufficient physical effects required to demonstrate the non-equilibrium effects in the governing equations. We consider a mono-atomic gas in a curved enclosure as shown in Fig. [!!!]. The boundaries at $x=0$, $x=L$ and the curved boundary are stationary. The curved bottom follows the Equation (\ref{boundary}) where $Rs=\frac{1}{2\cos{\theta_c}}$ and $\theta_c = \pi/3$,
+    \begin{equation} \label{boundary}
+        f(x) = \frac{x^2-\frac{1}{4}}{\sqrt{Rs^2-\frac{1}{4}}+\sqrt{Rs^2-x^2}} 
+    \end{equation}
+
+[What about the nonconformal part?] \\
+
+As mentioned in the previous section (\ref{bcs}), for aiding in the numerical computation using the least squares method, we frame the governing equations and boundary conditions in terms of $\vartheta$ and $\varrho$. The computation is executed using Wolfram Mathematica 12.
+
+\subsection{Difference Scheme}
+
+We present the method by using it to simulate the 2D steady state problem. The restriction to body-fitted mesh is done simply as a matter of convenience for presenting the numerical scheme but it is easy to see that the method for calculating the weights is resistant to the spatial discretisation skewness.\\
+Before conducting the numerical procedure, all sets of governing equations are re-framed in the following matrix equation,
+\begin{equation} \label{std_form}
+    [\mathcal{A}(U)] \pdv{U}{x} + [\mathcal{B}(U)] \pdv{U}{y} + [\mathcal{P}]U = 0 
+\end{equation}
+\[     U : \{ \varrho \quad v_x \quad v_y \quad \sigma_{xx} \quad \sigma_{xy} \quad \sigma_{yy} \quad \vartheta \quad q_x \quad q_y  \} \]
+Here, $[U]$ represents a vector of field variables and $[\mathcal{A}]$,$[\mathcal{B}]$, $[\mathcal{P}]$ represent coefficient matrices.
+The governing equations usually have partial derivative terms of order greater than one. They need to be converted into a system of first order partial differentiation operator to fit the form given in (\ref{std_form}). The conversion to the first order system makes the method more modular, hence, changing the governing equations is much faster and easier. Also, the method of weight calculation presented in the later section support this resolution owing to inaccuracies in approximating higher-order derivatives. As a result of such a standardisation, the discretisation error of this numerical method is uniform and hence easier to control. \\
+Similarly the boundary conditions are framed in the following form,
+\begin{equation} \label{form_bmat}
+    [U] = [B_{mat}][U] + [B_H]
+\end{equation}
+The number of boundary conditions depends on the nature of the coefficient matrices in the partial differential equation. As shown in Torrilhon and Struchtrup\cite{TORRILHON20081982}, it is $N-\alpha$ where $N=9$ (in the most general CCR case) is the dimension of the system and $\alpha$ is the multiplicity of the zero eigenvalue.
+
+\subsubsection{Interior Nodes}
+
+An important characteristic of the stencil is to have symmetry across the approximations along the $x$ and $y$ directions, so that the numerical solution doesn't have a directional preference due to the method itself. For the case results presented in this work, there are two ways to calculate the weights for the interior stencil which perform equivalently.
+
+\textbf{Polynomial Weighting :}
+        A polynomial can be used to \textit{locally fit} the field variable values and the required derivatives can be computed by the analytical differentiation of the polynomial at the stencil center. For example,
+        \begin{equation} \label{ply_fit}
+            f(x,y) = a_0 + a_1(x-x_0)+ b_1(y-y_0)
+        \end{equation}
+        ,where $(x_0,y_0)$ are the stencil centers. As there are three unknown coefficients $(a_0,a_1,b_1)$, the fit requires a stencil of 3 points, let, ${(x_i,y_j), (x_i,y_{j+1}),(x_{i+1}, y_j)}$
+        \begin{gather*}
+            a_0 + a_1(x_i-x_0)+ b_1(y_j-y_0) = f_{i,j} \\
+            a_0 + a_1(x_{i+1}-x_0)+ b_1(y_j-y_0) = f_{i+1,j} \\
+            a_0 + a_1(x_{i}-x_0)+ b_1(y_{j+1}-y_0) = f_{i,j+1}
+        \end{gather*}
+        It can be re-framed into a matrix equation (\ref{ply_approx}) to get the weights for the stencil. In this examples, $(x_i,y_j) = (x_0,y_0)$ and $U$ denoting the field variable vector.
+        \[ [X][A]=[U] \]
+        \begin{align} \label{ply_approx}
+            [X] &=
+            \begin{bmatrix}
+                1 & 0 & 0 \\
+                1 & x_{i+1}-x_0 & 0 \\
+                1 & 0 & y_{j+1}-y_0
+            \end{bmatrix}
+            & 
+            [A] &=
+            \begin{bmatrix}
+                a_0 \\
+                a_1 \\
+                b_1
+            \end{bmatrix}
+            & 
+            [U] &=
+            \begin{bmatrix}
+                U_{i,j} \\
+                U_{i+1,j} \\
+                U_{i,j+1}
+            \end{bmatrix}
+        \end{align}
+        \begin{equation} \label{coeff}
+            [A] = [X]^{-1}[U]
+        \end{equation}
+        The values of unknown coefficients of the shape function is found in terms of linear combination of the field values at the stencil points. Hence the weights of the combination are obtained using $[X]^{-1}$. The required derivatives can be calculated in the following fashion.
+        \[ \pdv{U}{x} \Bigr|_{(i,j)} = \pdv{\;(a_0 + a_1(x-x_0)+ b_1(y-y_0))}{x} = a_1 \]
+        The degree of the polynomial used to the fit the variable affects the accuracy of the numerical scheme in two ways. The example indicated that the number of unknown coefficients dictates the number of points to be included in the stencil. As is commonly known, the higher the number of points included in the stencil, higher is the accuracy of the scheme. But including more points within the stencil increases the computational effort as well as decreases the sparsity of the collocation matrix. Apart from the discretrisation error that the number of stencil point affects, this method introduces a fitting error while calculating the unknown coefficients in the shape function. Using a polynomial of a higher degree than what matches the number of stencil points, gives a over-constrained optimisation problem which reduces the fitting error without affecting the discretisation error. The idea was introduced in one of the earliest works on unstructured grids by Liska and Orkisz\cite{LISZKA198083}. \par
+        In the present work, the fitting polynomial used for demonstration of the method is the $4^{th}$ degree polynomial,
+        \[ f(x,y) = a_0 + a_1 (x-x_0) + a_2 (y-y_0) + a_3 (x-x_0)^2 + a_4 (y-y_0)^2\] 
+        %This indicates a interior stencil of 5 points, and it is formed as shown as in Figure \ref{stencil5}. The finite difference weights are calculates according the matrix expression in (\ref{5-point stencil}).
+        %\begin{figure}[h]
+        %    \includegraphics[scale=0.5]{Pictures/stencil5.jpg}
+       %     \centering
+       %     \caption{Example of the 5-point stencil}
+       %     \label{stencil5}
+       % \end{figure}
+        %\begin{align} \label{5-point stencil}
+        %    \begin{bmatrix}
+        %        a_0 \\ a_1 \\ a_2 \\ a_3 \\ a_4
+        %    \end{bmatrix}
+        %    &=
+        %    \begin{bmatrix}
+        %        1 & x_{i+1}-x_0 & y_j-y_0 & (x_{i+1}-x_0)^2 & (y_j-y_0)^2 \\
+        %        1 & x_{i-1}-x_0 & y_j-y_0 & (x_{i-1}-x_0)^2 & (y_j-y_0)^2 \\
+        %        1 & x_i-x_0 & y_{j+1}-y_0 & (x_i-x_0)^2 & (y_{j+1}-y_0)^2 \\
+        %        1 & x_i-x_0 & y_{j-1}-y_0 & (x_i-x_0)^2 & (y_{j-1}-y_0)^2 \\
+        %        1 & 0 & 0 & 0 & 0
+        %    \end{bmatrix}^{-1}
+        %    \begin{bmatrix}
+        %        U_{i+1,j} \\ U_{i-1,j} \\ U_{i,j+1} \\ U_{i,j-1} \\ U_{i,j}
+        %    \end{bmatrix}
+        %\end{align}
+\textbf{Centroidal Scheme :}
+    In the polynomial weighting scheme, the way to reduce the discretisation error would be to increase the degree of the polynomial. The user would need to decide upon the required accuracy before the start of the simulation and change the basis shape function accordingly. It is difficult, though to predict what difference will the change in basis functions have the numerical solution, particularly because of the coupled terms like $xy$, $x^2y$, $x^2y^2$ etc. To enhance the ease of scaling and generality towards additional physics, a level of constant uniformity is required. The former scheme still had advantages in terms of more complex refinements and in cases of high computational expense where finer control may be needed to balance the accuracy vs the cost. \par
+    In this new approach, the connectivity between the nodes is no longer necessary and hence is more suitable for unstructured meshes. Moving a angular fashion from the stencil center, pair of neighbouring nodes is chosen based on consecutive angular positions. This leads to angular distribution of triangles with a common center at the stencil center, as shown in the example in Figure \ref{centroid}. For each of the triangular combinations, the derivatives are approximated using the polynomial fit method at the centroid of the triangle. Accumulating the derivative values at the centroid of each triangle, an inverse-distance interpolation is used to approximate the derivative values at the stencil center. We can compute the weights for a linear combination of the surrounding node values for these approximation in a similar method as earlier. For the example, a quad-mesh node used in the results is used as shown in the Figure \ref{stencil5}. $n_c$ denotes the number of triangles. $\vec{x_0}$ and $\vec{x_{c,i}}$ denotes the position vectors of the stencil center and centroid of each of the triangles.
+        \[ w_i = \{\frac{d_i}{\sum_{i=1}^{n_c} d_i} : d_i = \frac{1}{\norm{\vec{x_0} - \vec{x_{c,i}}}^{\frac{1}{2}}}\} \]
+        So, the linear equation that is set up after any of these discretisation procedures is of the form of (\ref{alg_dis}). $w^{I}_{i,j,st}$ and $w^{II}_{i,j,st}$ represent the weights for the partial derivative of $U_{i,j}$ with respect to $x$ and $y$. $stsize$ represents the number of nodes within a stencil.
+        \begin{figure}[h]
+            \includegraphics[scale=0.5]{manuscript/src/figures/centroid.JPG}
+            \centering
+            \caption{Example of the centroidal stencil}
+            \label{centroid}
+        \end{figure}
+        \begin{equation} \label{alg_dis}
+            \mathcal{A}(U_{i,j}) \pdv{\left( \sum_{st=1}^{stsize} w^{I}_{i,j,st}U_{i,j,st}\right)}{x} + \mathcal{B}(U_{i,j}) \pdv{\left( \sum_{st=1}^{stsize} w^{II}_{i,j,st}U_{i,j,st}\right)}{y} + \mathcal{P}(U_{i,j}) = 0
+        \end{equation}
+        
+\subsubsection{Corner and Edge Stencils}
+ The first feature that differentiates this category from the previous is the loss of symmetry in the discretisation procedure. This leads to a requirement of a more sensitive stencil and weights for linear combination. In the standard form of boundary conditions, (\ref{form_bmat}), linear extrapolation is used for $[U]$ on the $R.H.S$ of the equation. For the corner nodes, the stencils considered are shown in Figure \ref{corner stencil}. The corners of the domain are cut and temperature of the corner is assigned to be $0.5\times(T_a + T_b)$. This is done to reduce the unphysical effects of the sharp temperature discontinuity to affect the solution. The density plots in Figure \ref{corner stencil} indicate the favourable use of corner-cutting to avoid discontinuities in the density and heat flux. \par
+        \begin{figure}[h]
+            \includegraphics[scale=0.5]{manuscript/src/figures/discontinuous density.jpg}
+            \centering
+            \caption{Density plot with corner-cutting and without}
+            \label{centroid}
+        \end{figure}
+As the aim is to handle unstructured grids, weight calculation based on the distribution of mesh nodes might seem to be a necessity. In order to confirm that hypothesis, a study of various combinations of edge stencils was done. The results are not presented here as it concludes the failure of all those possibilities. It is hence required to use absolute weights of $\{2,-1\}$ for two neighbouring nodes in the normal direction of the wall. Finding a geometry based approach to find the weights for the boundary nodes remains open question. For the non-linear case, $B_{mat}$ and $B_H$ are calculated for the stencil center, \textit{i.e.} $(x_i,y_j)$. The discretised equations for the boundary and corner nodes are as follows\footnote{For the sake of simplicity, the square brackets denoting matrix or vector is dropped henceforth.},
+    \begin{itemize}
+        \item \textit{Left Boundary: } \\ $ U_{1,j} = B_{mat} \left( 2U_{2,j}-U_{3,j} + B_H\right) \quad j \in [1,N_y]$
+        \item \textit{Right Boundary: } \\ $ U_{N_x,j} = B_{mat} \left( 2U_{N_{x-1},j}-U_{N_{x-2},j}+ B_H\right) \quad j \in [1,N_y]$
+        \item \textit{Upper Boundary: } \\ $ U_{i,N_y} = B_{mat} \left( 2U_{i,N_{y-1}}-U_{i,N_{y-2}}+ B_H\right) \quad i \in [1,N_x]$
+        \item \textit{Lower Boundary: } \\ $ U_{i,1} = B_{mat} \left( 2U_{i,2}-U_{i,3}+ B_H\right) \quad i \in [1,N_x]$
+    \end{itemize}
+    
+\subsection{Solution Procedure}
+    The discretised equations are set up for each of the nodes in the spatial domain using the earlier procedure. Thus we obtain $N_x\times N_y$ matrix equations, \textit{i.e.} $N_{eq}\times N_x \times N_y$ algebraic equations. In case of linear partial differential equations, this set of algebraic expressions is a system of linear equations and hence can be represented in the form of \begin{equation} \label{colloc}
+        \mathcal{M}X = b
+    \end{equation}, where $\mathcal{M}$ is called the \textit{collocation matrix}. $X$ is the variable vector, a collection of the field variable values at every spatial node and $b$ is the constant non-homogeneous part of the equations.\par
+    But in case of non-linear equations, the coefficient matrices $\mathcal{A,B,P}$ are themselves functions of the field variables. Hence, an explicit approach is used to solve the steady state problem, \textit{Picard's iteration method}. A \textit{starting solution} is used to calculate the coefficient matrices and get the solution of the system of equations (\ref{colloc}). The solution is now used to calculate the coefficient matrices in the next iteration. This process is continued until the norm between consecutive solution vectors is below the tolerance level specified by requirement of the problem. \par
+    The solution method used for solving the Eq. (\ref{colloc}) is the \textit{Least Squares Method (LSM)}. It solves for the solution vector $X$ as,
+    \[ min \norm{\mathcal{M}.\vec{X} - \vec{b}} \]
+    As is expected from the definition, multiple solutions may be encountered in such cases, particularly when $b$ is a sparse vector. To counter this, the density and temperature is scaled about $0$ by the substitution of $\varrho$ and $\vartheta$. The LSM's solution of choice now would be the non-trivial case.
+    
+\subsection{Regional Boundary Condition}
+    Through out the numerical method, the mass conservation hasn't been imposed intrinsically. The continuity equation does cover that in principle, as mentioned in the Introduction, due to the discretisation error in a Finite Difference method it is not satisfied strictly, as it is in  a Finite Volume method. This reflects in the oscillations present in the non-linear solution iterations presented in Figure \ref{non-mass}, which indicates a non-unique solution. Hence, an extra boundary condition is required to constrain the solution further. Alternatively, the multiple solutions can be removed by destroying the zero determinant of the collocation matrix.
+    \begin{figure*}[h]
+        \includegraphics[scale=0.35,trim={6.5cm 0 28cm 0},clip]{manuscript/src/figures/non-mass-constraint.jpg}
+        \centering
+        \caption{The density plot in the absence of a mass constraint}
+        \label{non-mass}
+    \end{figure*}
+    
+    \subsubsection{Ghost Source addition}
+        The addition of an '$\epsilon$' source terms in the continuity and energy equations i.e. the conservation-based equations shows a remarkable effect on numerical stabilisation as confirmed by Gupta\cite{gupta2015mathematical}. In the present case, it changes the matrix $[\mathcal{P}]$ such that the collocation matrix no longer results in multiple solution case and hence, we get a robust solution. Though it is not required the presented results, a scaling correction or normalisation is done in the density values at the end every iteration to ensure that the net mass remains constant.
+    
+    \subsubsection{Density Integral}
+        A boundary condition can be formulated from imposing mass conservation over the entire domain. As it would be a non-local phenomenon, the constraint must added in the collocation matrix, $\mathcal{M}$. The analytical constraint required is,
+        \[ \iint_V \varrho(x,y) \,dx\,dy = M_0\]
+        The convert into a algebraic constraint, a quadrature approximation based on area of each quad element of the mesh is used. Let the number of quad cells in the domain be $N_c$. 
+        \[ w_{s,c} = \frac{1}{4}(Area_c) \quad \quad c \in[1,N_c],\; s\in[1,4]\]
+        The subscript '$s$' represents the surrounding 4 nodes of the cell. The contributions of each surrounding cell is added and assigned to every node. The weights are then added on as follows to approximate the total area of the domain.
+        \[ \iint \varrho \,dV = \sum_{k=1}^{N_x\times N_y} w_k(U_k) = M_0 \]
+        Appending this constraint at the end of the collocation matrix, $\mathcal{M}$, the new equation is represented by,
+        \begin{equation} \label{new_eqn}
+            \mathcal{\tilde{M}}X = \tilde{b}
+        \end{equation}
+        Accordingly, the matrix $\tilde{\mathcal{M}}$ is rectangular. In an ideal scenario, if $\tilde{\mathcal{M}}$ could be made square then it would be advantageous because of the applicability of \texttt{LinearSolve} command in Mathematica. \texttt{LinearSolve} solves the system of equations exactly, leaving the discretisation to be the only error to be of any concern. But the physical cases solved in this work show a very small level of solution norm and hence, it remains a scope of future work to study the limitation of method in more complicated cases.
+        Solving this modified system of equations, the constancy of mass is imposed upon the numerical method. As in the case of two ways of setting up the interior stencil, the results for these two methods of mass conservation will be presented distinctly only if there is a discernable difference between the respective results.
+        
+\subsection{Order of Convergence: }
+The error of the numerical solution can be understood by the order of convergence of the numerical scheme. In conventional schemes, it can be determined accurately by using Taylor series but given the weighting procedure here, one has to resort to empirical order of convergence. It is done using the $L_2$ norm error of the numerical solution compared to the analytical solution. The order of convergence presented in Figure (\ref{orderconvo}) is for the Laplace equation over an annulus domain with an heated inner boundary. It is a standard case with an easily calculable analytical solution. The set of number of nodes is - $\{20\times5, 40\times10, 60\times15, 80\times20, 100\times25, 120\times30, 140\times35, 160\times40\}$\footnote{$a\times b$ indicates the aspect ratio of the nodes}. As shown in Figure (\ref{orderconvo}), the order of convergence, i.e. the absolute slope value of the curve, is 2.6327. Note that for the Laplace equation, the value is slightly inflated because of the intrinsic symmetric and simple nature of the equation. 
+\begin{figure}[H]
+        \includegraphics[scale=0.4]{manuscript/src/figures/order_conver.jpg}
+        \centering
+        \caption{Log(Error) vs Log(Number of nodes)}
+        \label{orderconvo}
+\end{figure}
